@@ -1,6 +1,6 @@
 {
   "name": "Remix: UzMovi Clone",
-  "description": "A replica of the UzMovi movie streaming platform.",
+  "description": "UzMovi clone with registration and movie streaming.",
   "requestFramePermissions": [],
-  "majorCapabilities": []
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
 import { auth, db } from './firebase';
 
 interface AuthContextType {
@@ -8,6 +8,8 @@ interface AuthContextType {
   userData: any | null;
   isAdmin: boolean;
   loading: boolean;
+  isRegistering: boolean;
+  setIsRegistering: (val: boolean) => void;
   signInWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
   isAuthModalOpen: boolean;
@@ -21,6 +23,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [userData, setUserData] = useState<any | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [isRegistering, setIsRegistering] = useState(false);
   const [isAuthModalOpen, setAuthModalOpen] = useState(false);
   const [showAgeModal, setShowAgeModal] = useState(false);
   const [completeDob, setCompleteDob] = useState('');
@@ -39,38 +42,61 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currUser) => {
+    let unsubscribeUserDoc: (() => void) | null = null;
+
+    const unsubscribeAuth = onAuthStateChanged(auth, async (currUser) => {
       setUser(currUser);
       if (currUser) {
-        // Check if user exists in DB, if not create
+        // Unsubscribe from previous user doc if any
+        if (unsubscribeUserDoc) unsubscribeUserDoc();
+
         const userDocRef = doc(db, 'users', currUser.uid);
-        const userDoc = await getDoc(userDocRef);
         
-        if (!userDoc.exists() || !userDoc.data()?.dob) {
-          setPendingUserRef(userDocRef);
-          setCompleteName(currUser.displayName || '');
-          setShowAgeModal(true);
-        }
+        unsubscribeUserDoc = onSnapshot(userDocRef, (docSnap) => {
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            setUserData(data);
+            
+            const admins = ['sherzodbekalisherov37@gmail.com'];
+            const isAdminUser = admins.includes(currUser.email || '') || (data && data.role === 'admin');
+            setIsAdmin(!!isAdminUser);
 
-        const data = userDoc.data();
-        setUserData(data || null);
-        const admins = ['sherzodbekalisherov37@gmail.com'];
-        const isAdminUser = admins.includes(currUser.email || '') || (data && data.role === 'admin');
-        setIsAdmin(!!isAdminUser);
-
-        // Close login modal if user profile is already complete
-        if (userDoc.exists() && userDoc.data()?.dob) {
-          setAuthModalOpen(false);
-        }
+            // Close login modal and age modal if user profile is complete
+            if (data?.dob) {
+              setShowAgeModal(false);
+              setAuthModalOpen(false);
+            } else if (!isRegistering) {
+              setPendingUserRef(userDocRef);
+              setCompleteName(currUser.displayName || '');
+              setShowAgeModal(true);
+            }
+          } else if (!isRegistering) {
+            // Document doesn't exist yet
+            setUserData(null);
+            setIsAdmin(['sherzodbekalisherov37@gmail.com'].includes(currUser.email || ''));
+            setPendingUserRef(userDocRef);
+            setCompleteName(currUser.displayName || '');
+            setShowAgeModal(true);
+          }
+          setLoading(false);
+        }, (error) => {
+          console.error("User doc listener error:", error);
+          setLoading(false);
+        });
       } else {
+        if (unsubscribeUserDoc) unsubscribeUserDoc();
+        unsubscribeUserDoc = null;
         setIsAdmin(false);
         setUserData(null);
         setShowAgeModal(false);
+        setLoading(false);
       }
-      setLoading(false);
     });
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribeAuth();
+      if (unsubscribeUserDoc) unsubscribeUserDoc();
+    };
   }, []);
 
   const handleSaveAge = async () => {
@@ -115,6 +141,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       userData,
       isAdmin, 
       loading, 
+      isRegistering,
+      setIsRegistering,
       signInWithGoogle, 
       logout,
       isAuthModalOpen,

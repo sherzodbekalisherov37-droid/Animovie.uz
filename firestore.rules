@@ -52,13 +52,17 @@ service cloud.firestore {
     match /users/{userId} {
       function isValidUser(data) {
         return data.uid is string && data.uid == userId &&
-               data.email is string && data.email.size() <= 100;
+               data.email is string && data.email.size() <= 100 &&
+               (!('name' in data) || (data.name is string && data.name.size() <= 100)) &&
+               (!('age' in data) || data.age is int) &&
+               (!('dob' in data) || (data.dob is string && data.dob.size() <= 10)) &&
+               (!('role' in data) || (data.role in ['admin', 'user']));
       }
 
       allow read: if isOwner(userId) || isAdmin();
       
       allow create: if isOwner(userId) && isValidUser(request.resource.data) && 
-                      (!request.resource.data.keys().hasAny(['role']) || request.resource.data.role == 'user');
+                      (!('role' in request.resource.data) || request.resource.data.role == 'user');
                       
       allow update: if (isOwner(userId) && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role'])) || 
                       isAdmin();

@@ -7,7 +7,7 @@ import { auth, db } from '../lib/firebase';
 import { doc, setDoc } from 'firebase/firestore';
 
 export const LoginModal: React.FC = () => {
-  const { isAuthModalOpen, setAuthModalOpen, signInWithGoogle } = useAuth();
+  const { isAuthModalOpen, setAuthModalOpen, signInWithGoogle, setIsRegistering } = useAuth();
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -38,12 +38,15 @@ export const LoginModal: React.FC = () => {
     try {
       if (mode === 'login') {
         await signInWithEmailAndPassword(auth, email, password);
+        setAuthModalOpen(false);
       } else {
-        if (!dob) {
-            setError("Iltimos, tug'ilgan sanangizni kiriting");
+        if (!dob || !name) {
+            setError("Iltimos, barcha maydonlarni to'ldiring");
             setLoading(false);
             return;
         }
+        
+        setIsRegistering(true);
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         await updateProfile(userCredential.user, { displayName: name });
         await setDoc(doc(db, 'users', userCredential.user.uid), {
@@ -54,12 +57,19 @@ export const LoginModal: React.FC = () => {
           dob: dob,
           role: 'user'
         });
+        setIsRegistering(false);
+        setAuthModalOpen(false);
       }
-      setAuthModalOpen(false);
     } catch (err: any) {
-      setError(err.message.includes('auth/user-not-found') ? 'Foydalanuvchi topilmadi' : 
-              err.message.includes('auth/wrong-password') ? 'Noto\'g\'ri parol' : 
-              err.message.includes('auth/email-already-in-use') ? 'Ushbu email band' : err.message);
+      setIsRegistering(false);
+      setError(
+        err.code === 'auth/user-not-found' ? 'Foydalanuvchi topilmadi' : 
+        err.code === 'auth/wrong-password' ? 'Noto\'g\'ri parol' : 
+        err.code === 'auth/email-already-in-use' ? 'Ushbu email band' : 
+        err.code === 'auth/invalid-email' ? 'Noto\'g\'ri email manzili' :
+        err.code === 'auth/operation-not-allowed' ? 'E-mail va parol orqali kirish yoqilmagan. Admin bilan bog\'laning.' :
+        err.message
+      );
     } finally {
       setLoading(false);
     }
