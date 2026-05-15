@@ -1,0 +1,82 @@
+{
+  "entities": {
+    "Movie": {
+      "title": "Movie",
+      "description": "Information about a movie",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "image": { "type": "string" },
+        "genre": { "type": "string" },
+        "year": { "type": "string" },
+        "description": { "type": "string" },
+        "isBanner": { "type": "boolean" },
+        "episodes": { 
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "title": { "type": "string" },
+              "url": { "type": "string" },
+              "season": { "type": "integer" }
+            }
+          }
+        },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "image", "genre", "year"]
+    },
+    "Comment": {
+      "title": "Comment",
+      "description": "User comment on a movie",
+      "type": "object",
+      "properties": {
+        "movieId": { "type": "string" },
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "userPhoto": { "type": "string" },
+        "text": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["movieId", "userId", "userName", "text", "createdAt"]
+    },
+    "User": {
+      "title": "User",
+      "description": "User profile and roles",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "user"] }
+      },
+      "required": ["uid", "email"]
+    },
+    "Setting": {
+      "title": "Setting",
+      "description": "Global application settings",
+      "type": "object",
+      "properties": {
+        "telegram": { "type": "string" },
+        "instagram": { "type": "string" }
+      }
+    }
+  },
+  "firestore": {
+    "movies": {
+      "schema": "Movie",
+      "description": "Collection of movies"
+    },
+    "comments": {
+      "schema": "Comment",
+      "description": "Collection of user comments"
+    },
+    "users": {
+      "schema": "User",
+      "description": "User profiles with roles"
+    },
+    "settings": {
+      "schema": "Setting",
+      "description": "Global config (doc id: global)"
+    }
+  }
+}

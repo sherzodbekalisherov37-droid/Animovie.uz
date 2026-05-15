@@ -1,0 +1,104 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isEmailVerified() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == 'sherzodbekalisherov37@gmail.com' ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
+      );
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Movies Collection
+    match /movies/{movieId} {
+      function isValidMovie(data) {
+        return data.title is string && data.title.size() <= 200 &&
+               data.image is string && data.image.size() <= 500 &&
+               data.genre is string && data.genre.size() <= 50 &&
+               data.year is string && data.year.size() <= 4 &&
+               (!data.keys().hasAll(['isBanner']) || data.isBanner is bool) &&
+               (!data.keys().hasAll(['episodes']) || data.episodes is list);
+      }
+
+      allow read: if true;
+      
+      allow create: if isAdmin() && isValidMovie(request.resource.data);
+      allow update: if isAdmin() && isValidMovie(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    // Users Collection
+    match /users/{userId} {
+      function isValidUser(data) {
+        return data.uid is string && data.uid == userId &&
+               data.email is string && data.email.size() <= 100;
+      }
+
+      allow read: if isOwner(userId) || isAdmin();
+      
+      allow create: if isOwner(userId) && isValidUser(request.resource.data) && 
+                      (!request.resource.data.keys().hasAny(['role']) || request.resource.data.role == 'user');
+                      
+      allow update: if (isOwner(userId) && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role'])) || 
+                      isAdmin();
+    }
+
+    // Comments Collection
+    match /comments/{commentId} {
+      function isValidComment(data) {
+        return data.movieId is string &&
+               data.userId is string && data.userId == request.auth.uid &&
+               data.userName is string && data.userName.size() <= 100 &&
+               data.text is string && data.text.size() <= 1000 &&
+               data.createdAt == request.time;
+      }
+
+      allow read: if true;
+      allow create: if isSignedIn() && isValidComment(request.resource.data);
+      allow delete: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
+    }
+
+    // Messages Collection
+    match /messages/{messageId} {
+      function isValidMessage(data) {
+        return data.name is string && data.name.size() <= 100 &&
+               data.contactInfo is string && data.contactInfo.size() <= 200 &&
+               data.message is string && data.message.size() <= 2000 &&
+               data.read is bool &&
+               data.createdAt == request.time;
+      }
+
+      allow read: if isAdmin();
+      allow create: if isValidMessage(request.resource.data);
+      allow update: if isAdmin() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
+      allow delete: if isAdmin();
+    }
+
+    // Settings Collection
+    match /settings/{settingId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+  }
+}
