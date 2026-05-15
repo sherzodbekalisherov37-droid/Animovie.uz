@@ -102,13 +102,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const handleSaveAge = async () => {
     if (!completeDob || !completeName) return;
     if (pendingUserRef && user) {
+      const isAdminEmail = user.email === 'sherzodbekalisherov37@gmail.com';
       const updatedData = {
         uid: user.uid,
         email: user.email,
         name: completeName,
         age: calculateAge(completeDob),
         dob: completeDob,
-        role: 'user'
+        role: isAdminEmail ? 'admin' : 'user'
       };
       await setDoc(pendingUserRef, updatedData, { merge: true });
       setUserData(updatedData);
