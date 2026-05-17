@@ -142,6 +142,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (isIframe) message += ' Eslatma: Saytni yangi tabda ochib ko\'ring.';
       } else if (error.code === 'auth/cancelled-popup-request') {
         message = 'Kirish so\'rovi bekor qilindi.';
+      } else if (error.code === 'auth/unauthorized-domain') {
+        const currentDomain = window.location.hostname;
+        message = `Ushbu sayt ( ${currentDomain} ) Firebase-da ruxsat berilgan emas. Firebase Console -> Authentication -> Settings -> Authorized domains bo'limiga ushbu manzilni qo'shing.`;
       } else {
         message = 'Tizimga kirishda xatolik: ' + (error.code || error.message);
       }
