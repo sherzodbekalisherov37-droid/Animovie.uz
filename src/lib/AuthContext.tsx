@@ -10,6 +10,8 @@ interface AuthContextType {
   loading: boolean;
   isRegistering: boolean;
   setIsRegistering: (val: boolean) => void;
+  authError: string;
+  setAuthError: (err: string) => void;
   signInWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
   isAuthModalOpen: boolean;
@@ -26,6 +28,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isRegistering, setIsRegistering] = useState(false);
   const [isAuthModalOpen, setAuthModalOpen] = useState(false);
   const [showAgeModal, setShowAgeModal] = useState(false);
+  const [authError, setAuthError] = useState('');
   const [completeDob, setCompleteDob] = useState('');
   const [completeName, setCompleteName] = useState('');
   const [pendingUserRef, setPendingUserRef] = useState<any>(null);
@@ -120,11 +123,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signInWithGoogle = async () => {
     const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: 'select_account' });
+    setAuthError('');
     try {
+      setLoading(true);
       await signInWithPopup(auth, provider);
-      setAuthModalOpen(false);
-    } catch (error) {
+      // Auth success is handled by onAuthStateChanged listener
+    } catch (error: any) {
       console.error('Login error:', error);
+      setAuthError('Google orqali kirishda xatolik: ' + (error.message || 'Noma\'lum xatolik'));
+      setLoading(false);
     }
   };
 
@@ -144,6 +152,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       loading, 
       isRegistering,
       setIsRegistering,
+      authError,
+      setAuthError,
       signInWithGoogle, 
       logout,
       isAuthModalOpen,

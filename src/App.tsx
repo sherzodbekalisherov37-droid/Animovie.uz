@@ -47,7 +47,8 @@ export default function App() {
       setMovies(moviesData);
       setLoading(false);
     }, (error) => {
-      handleFirestoreError(error, OperationType.LIST, 'movies');
+      console.error("Movies fetch error:", error);
+      setLoading(false);
     });
 
     const unsubscribeSettings = onSnapshot(doc(db, 'settings', 'global'), (snapshot) => {

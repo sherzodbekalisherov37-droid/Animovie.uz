@@ -7,7 +7,7 @@ import { auth, db } from '../lib/firebase';
 import { doc, setDoc } from 'firebase/firestore';
 
 export const LoginModal: React.FC = () => {
-  const { isAuthModalOpen, setAuthModalOpen, signInWithGoogle, setIsRegistering } = useAuth();
+  const { isAuthModalOpen, setAuthModalOpen, signInWithGoogle, setIsRegistering, authError, setAuthError } = useAuth();
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -100,7 +100,10 @@ export const LoginModal: React.FC = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={() => setAuthModalOpen(false)}
+            onClick={() => {
+              setAuthModalOpen(false);
+              setAuthError('');
+            }}
             className="absolute inset-0 bg-black/95 backdrop-blur-xl"
           />
           
@@ -159,7 +162,10 @@ export const LoginModal: React.FC = () => {
             {/* Right Side: Authentication Form */}
             <div className="p-10 md:p-14 overflow-y-auto custom-scrollbar flex flex-col justify-center relative">
               <button 
-                onClick={() => setAuthModalOpen(false)}
+                onClick={() => {
+                  setAuthModalOpen(false);
+                  setAuthError('');
+                }}
                 className="absolute top-10 right-10 text-gray-600 hover:text-white transition-all hover:rotate-90 duration-300 z-20"
               >
                 <X size={28} />
@@ -248,6 +254,7 @@ export const LoginModal: React.FC = () => {
                   </div>
 
                   {error && <p className="text-[#ff3d3d] text-xs font-bold text-center">{error}</p>}
+                  {authError && <p className="text-[#ff3d3d] text-xs font-bold text-center">{authError}</p>}
                   {success && <p className="text-emerald-500 text-xs font-bold text-center">{success}</p>}
 
                   <div className="flex justify-end">
