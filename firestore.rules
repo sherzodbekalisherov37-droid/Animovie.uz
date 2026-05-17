@@ -26,26 +26,10 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    function isValidId(id) {
-      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
-    }
-
     // Movies Collection
     match /movies/{movieId} {
-      function isValidMovie(data) {
-        return data.title is string && data.title.size() <= 200 &&
-               data.image is string && data.image.size() <= 500 &&
-               data.genre is string && data.genre.size() <= 50 &&
-               data.year is string && data.year.size() <= 4 &&
-               (!data.keys().hasAll(['isBanner']) || data.isBanner is bool) &&
-               (!data.keys().hasAll(['episodes']) || data.episodes is list);
-      }
-
       allow read: if true;
-      
-      allow create: if isAdmin() && isValidMovie(request.resource.data);
-      allow update: if isAdmin() && isValidMovie(request.resource.data);
-      allow delete: if isAdmin();
+      allow write: if isAdmin();
     }
 
     // Users Collection

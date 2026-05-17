@@ -287,7 +287,12 @@ export const LoginModal: React.FC = () => {
                   <span className="text-gray-500">{mode === 'login' ? "Hisobingiz yo'qmi?" : "Hisobingiz bormi?"} </span>
                   <button 
                     type="button"
-                    onClick={() => setMode(mode === 'login' ? 'register' : 'login')}
+                    onClick={() => {
+                      setMode(mode === 'login' ? 'register' : 'login');
+                      setError('');
+                      setAuthError('');
+                      setSuccess('');
+                    }}
                     className="font-bold text-[#ff3d3d] hover:underline ml-1"
                   >
                     {mode === 'login' ? "Ro'yxatdan o'tish" : "Kirish"}

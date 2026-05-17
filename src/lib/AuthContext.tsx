@@ -125,13 +125,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({ prompt: 'select_account' });
     setAuthError('');
+    
+    // Check if in iframe (popup might fail)
+    const isIframe = window.self !== window.top;
+    
     try {
       setLoading(true);
       await signInWithPopup(auth, provider);
-      // Auth success is handled by onAuthStateChanged listener
     } catch (error: any) {
       console.error('Login error:', error);
-      setAuthError('Google orqali kirishda xatolik: ' + (error.message || 'Noma\'lum xatolik'));
+      let message = 'Google orqali kirishda xatolik yuz berdi.';
+      if (error.code === 'auth/popup-closed-by-user') {
+        message = 'Tizimga kirish oynasi yopildi.';
+      } else if (error.code === 'auth/popup-blocked') {
+        message = 'Brauzer popup oynasini blokladi. Iltimos, ruxsat bering.';
+        if (isIframe) message += ' Eslatma: Saytni yangi tabda ochib ko\'ring.';
+      } else if (error.code === 'auth/cancelled-popup-request') {
+        message = 'Kirish so\'rovi bekor qilindi.';
+      } else {
+        message = 'Tizimga kirishda xatolik: ' + (error.code || error.message);
+      }
+      setAuthError(message);
       setLoading(false);
     }
   };
